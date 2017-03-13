@@ -50,7 +50,7 @@
         
           <a id="nav-rss-link" class="nav-icon" href="/atom.xml" title="RSS Feed"></a>
         
-        <a id="nav-search-btn" class="nav-icon" title="Zoeken"></a>
+        <a id="nav-search-btn" class="nav-icon" title="Search"></a>
       </nav>
       <div id="search-form-wrap">
         <form action="//google.com/search" method="get" accept-charset="UTF-8" class="search-form"><input type="search" name="q" results="0" class="search-form-input" placeholder="Search"><button type="submit" class="search-form-submit">&#xF002;</button><input type="hidden" name="sitesearch" value="http://yoursite.com"></form>
@@ -90,19 +90,10 @@
 <p>显然这不够优雅。</p>
 <p>之前听河狸家的技术总监就说到了这个的解决方案，查了一下，发现使用inotify来监听文件变化并向程序发送事件，再用select，poll，epoll来监听inotify产生的事件可以完成tail命令的基本功能。</p>
 <p>为此，了解一下相关的调用。</p>
-<h3 id="inotify相关"><a href="#inotify相关" class="headerlink" title="inotify相关"></a>inotify相关</h3><ol>
-<li><p>头文件</p>
-<figure class="highlight plain"><table><tr><td class="gutter"><pre><div class="line">1</div></pre></td><td class="code"><pre><div class="line">#include&lt;sys/inotify.h&gt;</div></pre></td></tr></table></figure>
-</li>
-<li><p>初始化</p>
-</li>
-</ol>
-<figure class="highlight plain"><table><tr><td class="gutter"><pre><div class="line">1</div></pre></td><td class="code"><pre><div class="line">int fd = inotify_init();</div></pre></td></tr></table></figure>
+<h3 id="inotify相关"><a href="#inotify相关" class="headerlink" title="inotify相关"></a>inotify相关</h3><h6 id="头文件"><a href="#头文件" class="headerlink" title="头文件"></a>头文件</h6><figure class="highlight plain"><table><tr><td class="gutter"><pre><div class="line">1</div></pre></td><td class="code"><pre><div class="line">#include&lt;sys/inotify.h&gt;</div></pre></td></tr></table></figure>
+<h6 id="初始化"><a href="#初始化" class="headerlink" title="初始化"></a>初始化</h6><figure class="highlight plain"><table><tr><td class="gutter"><pre><div class="line">1</div></pre></td><td class="code"><pre><div class="line">int fd = inotify_init();</div></pre></td></tr></table></figure>
 <p>此处的fd可以理解为inotify创建的一个通知事件的文件描述符，类似网络编程中的socket，当监听文件变化时，inotify会向fd中写入事件的相关信息。</p>
-<ol>
-<li>添加监听</li>
-</ol>
-<figure class="highlight plain"><table><tr><td class="gutter"><pre><div class="line">1</div></pre></td><td class="code"><pre><div class="line">int wd = inotify_add_watch(int fd, const char *path, unit32_t mask);</div></pre></td></tr></table></figure>
+<h6 id="添加监听"><a href="#添加监听" class="headerlink" title="添加监听"></a>添加监听</h6><figure class="highlight plain"><table><tr><td class="gutter"><pre><div class="line">1</div></pre></td><td class="code"><pre><div class="line">int wd = inotify_add_watch(int fd, const char *path, unit32_t mask);</div></pre></td></tr></table></figure>
 <p>这里的fd就是初始化调用inotify_init返回的文件描述符，path就是你要监听的文件路径，mask就是你要监听的变化类型，可以有很多种组合，返回值wd在文档上就这么一句话：</p>
 <blockquote>
 <p>On success, inotify_add_watch() returns a nonnegative watch descriptor. On error -1 is returned and errno is set appropriately.</p>
@@ -125,15 +116,9 @@
 </ul>
 <p>实现tail是用的IN_MODIFY</p>
 <p>当调用添加监视对象后就可以坐等事件发生了，当path对应的文件被修改后，fd就变得可读，而且变化的消息也写入了fd，这里我们就可以用select，poll，epoll来监听fd以变相监听文件的变化了。</p>
-<h3 id="epoll相关"><a href="#epoll相关" class="headerlink" title="epoll相关"></a>epoll相关</h3><ol>
-<li>创建</li>
-</ol>
-<figure class="highlight plain"><table><tr><td class="gutter"><pre><div class="line">1</div></pre></td><td class="code"><pre><div class="line">int epfd = epoll_create(int size);</div></pre></td></tr></table></figure>
+<h3 id="epoll相关"><a href="#epoll相关" class="headerlink" title="epoll相关"></a>epoll相关</h3><h6 id="创建"><a href="#创建" class="headerlink" title="创建"></a>创建</h6><figure class="highlight plain"><table><tr><td class="gutter"><pre><div class="line">1</div></pre></td><td class="code"><pre><div class="line">int epfd = epoll_create(int size);</div></pre></td></tr></table></figure>
 <p>创建一个epoll，size是要监听的文件数量</p>
-<ol>
-<li>注册</li>
-</ol>
-<figure class="highlight plain"><table><tr><td class="gutter"><pre><div class="line">1</div></pre></td><td class="code"><pre><div class="line">int epoll_ctl(int epfd, int op,int fd, struct epoll_event *event)</div></pre></td></tr></table></figure>
+<h6 id="注册"><a href="#注册" class="headerlink" title="注册"></a>注册</h6><figure class="highlight plain"><table><tr><td class="gutter"><pre><div class="line">1</div></pre></td><td class="code"><pre><div class="line">int epoll_ctl(int epfd, int op,int fd, struct epoll_event *event)</div></pre></td></tr></table></figure>
 <p>epfd就是创建epoll_create返回值，op表示动作，<br>可选的有</p>
 <ul>
 <li>EPOLL_CTL_ADD：注册新的fd到epfd中；</li>
@@ -142,10 +127,7 @@
 </ul>
 <p>fd是要监听的文件</p>
 <p>event 是需要监听的内容，例如fd可读，可写等等。</p>
-<ol>
-<li>等待事件发生</li>
-</ol>
-<figure class="highlight plain"><table><tr><td class="gutter"><pre><div class="line">1</div></pre></td><td class="code"><pre><div class="line">int epoll_wait(int epfd, struct epoll_event * events, int maxevents, int timeout);</div></pre></td></tr></table></figure>
+<h6 id="等待事件发生"><a href="#等待事件发生" class="headerlink" title="等待事件发生"></a>等待事件发生</h6><figure class="highlight plain"><table><tr><td class="gutter"><pre><div class="line">1</div></pre></td><td class="code"><pre><div class="line">int epoll_wait(int epfd, struct epoll_event * events, int maxevents, int timeout);</div></pre></td></tr></table></figure>
 <p>前两个参数都是上面的，第三个参数maxevents其实是告诉内核 events 有多大，不会超过创建时的size，第四个参数timeout是指等待的超时时间，比如设为500，表示500毫秒不管有没有事件发生都会返回，设为0则一直阻塞直到事件发生。返回值是发生事件的个数。</p>
 <p>介绍完几个系统调用，就可以开始撸代码了。花了几个小时撸了一个简易版本，好在可以用，只限于append。</p>
 <figure class="highlight plain"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div><div class="line">6</div><div class="line">7</div><div class="line">8</div><div class="line">9</div><div class="line">10</div><div class="line">11</div><div class="line">12</div><div class="line">13</div><div class="line">14</div><div class="line">15</div><div class="line">16</div><div class="line">17</div><div class="line">18</div><div class="line">19</div><div class="line">20</div><div class="line">21</div><div class="line">22</div><div class="line">23</div><div class="line">24</div><div class="line">25</div><div class="line">26</div><div class="line">27</div><div class="line">28</div><div class="line">29</div><div class="line">30</div><div class="line">31</div><div class="line">32</div><div class="line">33</div><div class="line">34</div><div class="line">35</div><div class="line">36</div><div class="line">37</div><div class="line">38</div><div class="line">39</div><div class="line">40</div><div class="line">41</div><div class="line">42</div><div class="line">43</div><div class="line">44</div><div class="line">45</div><div class="line">46</div><div class="line">47</div><div class="line">48</div><div class="line">49</div><div class="line">50</div><div class="line">51</div><div class="line">52</div><div class="line">53</div><div class="line">54</div><div class="line">55</div><div class="line">56</div><div class="line">57</div><div class="line">58</div><div class="line">59</div><div class="line">60</div><div class="line">61</div><div class="line">62</div><div class="line">63</div><div class="line">64</div><div class="line">65</div><div class="line">66</div><div class="line">67</div><div class="line">68</div><div class="line">69</div><div class="line">70</div><div class="line">71</div><div class="line">72</div><div class="line">73</div><div class="line">74</div><div class="line">75</div><div class="line">76</div><div class="line">77</div><div class="line">78</div><div class="line">79</div></pre></td><td class="code"><pre><div class="line">#include &lt;fcntl.h&gt;</div><div class="line">#include &lt;stdio.h&gt;</div><div class="line">#include &lt;string.h&gt;</div><div class="line">#include &lt;errno.h&gt;</div><div class="line">#include &lt;sys/inotify.h&gt;</div><div class="line">#include &lt;sys/epoll.h&gt;</div><div class="line">#include &lt;sys/types.h&gt;</div><div class="line">#include &lt;sys/stat.h&gt;</div><div class="line">#include &lt;errno.h&gt;</div><div class="line"></div><div class="line">#define BUFSIZE 81</div><div class="line"></div><div class="line">int main(int argc, char* argv[]) &#123;</div><div class="line">    printf(&quot;LOG:argc = %d\n&quot;, argc);</div><div class="line">    printf(&quot;LOG:argc[1] = %s\n&quot;, argv[1]);</div><div class="line">    int fd = inotify_init();</div><div class="line">    printf(&quot;LOG:fd = %d\n&quot;, fd);</div><div class="line">    if (fd &lt; 0) &#123;</div><div class="line">        printf(&quot;LOG:inotify_init error\n&quot;);</div><div class="line">        return -1;</div><div class="line">    &#125;</div><div class="line">    int wd = inotify_add_watch(fd, argv[1], IN_MODIFY);</div><div class="line">    printf(&quot;LOG:wd = %d\n&quot;, wd);</div><div class="line">    if (wd &lt; 0) &#123;</div><div class="line">        printf(&quot;LOG:inotify_add_watch error&quot;);</div><div class="line">        return -1;</div><div class="line">    &#125;</div><div class="line"></div><div class="line">    int epfd = epoll_create(1);</div><div class="line">    printf(&quot;LOG:epfd = %d\n&quot;, epfd);</div><div class="line">    if (epfd &lt; 0) &#123;</div><div class="line">        printf(&quot;LOG:epoll_create error\n&quot;);</div><div class="line">        return -1;</div><div class="line">    &#125;</div><div class="line"></div><div class="line">    struct epoll_event event;</div><div class="line">    event.events = EPOLLIN | EPOLLET;</div><div class="line">    event.data.fd = fd;</div><div class="line"></div><div class="line">    int re = epoll_ctl(epfd, EPOLL_CTL_ADD, fd, &amp;event);     </div><div class="line">    printf(&quot;LOG:re = %d\n&quot;, re);</div><div class="line">    if (re != 0) &#123;</div><div class="line">        printf(&quot;LOG:epoll_ctl error:%s\n&quot;, strerror(errno));</div><div class="line">        return -1;</div><div class="line">    &#125;</div><div class="line"></div><div class="line">    ssize_t n;</div><div class="line">    ssize_t tmp;</div><div class="line">    int file_fd = open(argv[1], O_RDONLY);</div><div class="line">    printf(&quot;LOG:file_fd = %d\n&quot;, file_fd);</div><div class="line">    if (file_fd == -1) &#123;</div><div class="line">        printf(&quot;LOG:open error\n&quot;);</div><div class="line">        return -1;</div><div class="line">    &#125;</div><div class="line">    char buf[BUFSIZE];</div><div class="line">    </div><div class="line">    int seek_re;    </div><div class="line"></div><div class="line">    while (1) &#123;</div><div class="line">        int num = epoll_wait(epfd, &amp;event, 1, -1);</div><div class="line">        printf(&quot;LOG:epoll_wait num = %d\n&quot;, num);</div><div class="line">        if (num &gt; 0) &#123;</div><div class="line">            // 这里是为了读掉消息而不重复通知</div><div class="line">            tmp = read(fd, buf, BUFSIZE);</div><div class="line">            seek_re = lseek(file_fd, (off_t) -1, SEEK_CUR);</div><div class="line">            n = read(file_fd, buf, BUFSIZE);</div><div class="line">            if (n == -1) &#123;</div><div class="line">		        printf(&quot;break\n&quot;);</div><div class="line">                break;</div><div class="line">            &#125;</div><div class="line">            if (n &gt; 0) &#123;</div><div class="line">                printf(&quot;%s&quot;, buf);</div><div class="line">            &#125;</div><div class="line">        &#125;</div><div class="line">        printf(&quot;LOG:new loop\n&quot;);</div><div class="line">    &#125;</div><div class="line">    </div><div class="line">    return 0;</div><div class="line">&#125;</div></pre></td></tr></table></figure>
@@ -172,7 +154,7 @@
       
     </div>
     <footer class="article-footer">
-      <a data-url="http://yoursite.com/2017/03/13/使用inotify和epoll实现tail命令/" data-id="cj08aqmau0000brrdqhp9vatr" class="article-share-link">Delen</a>
+      <a data-url="http://yoursite.com/2017/03/13/使用inotify和epoll实现tail命令/" data-id="cj08aqmau0000brrdqhp9vatr" class="article-share-link">Share</a>
       
       
     </footer>
@@ -256,7 +238,7 @@
       
     </div>
     <footer class="article-footer">
-      <a data-url="http://yoursite.com/2016/12/08/redis存储分析/" data-id="cj08aqmb40002brrdff3ehtgx" class="article-share-link">Delen</a>
+      <a data-url="http://yoursite.com/2016/12/08/redis存储分析/" data-id="cj08aqmb40002brrdff3ehtgx" class="article-share-link">Share</a>
       
       
     </footer>
@@ -301,7 +283,7 @@
       
     </div>
     <footer class="article-footer">
-      <a data-url="http://yoursite.com/2016/07/26/hello-world/" data-id="cj08aqmb00001brrdl2mbynsh" class="article-share-link">Delen</a>
+      <a data-url="http://yoursite.com/2016/07/26/hello-world/" data-id="cj08aqmb00001brrdl2mbynsh" class="article-share-link">Share</a>
       
       
     </footer>
@@ -326,7 +308,7 @@
   
     
   <div class="widget-wrap">
-    <h3 class="widget-title">Archieven</h3>
+    <h3 class="widget-title">Archives</h3>
     <div class="widget">
       <ul class="archive-list"><li class="archive-list-item"><a class="archive-list-link" href="/archives/2017/03/">March 2017</a></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2016/12/">December 2016</a></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2016/07/">July 2016</a></li></ul>
     </div>
@@ -336,7 +318,7 @@
   
     
   <div class="widget-wrap">
-    <h3 class="widget-title">Recente berichten</h3>
+    <h3 class="widget-title">Recent Posts</h3>
     <div class="widget">
       <ul>
         
