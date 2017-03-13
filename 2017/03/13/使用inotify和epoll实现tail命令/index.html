@@ -21,7 +21,7 @@
 要实现这种功能，一般会想到轮询，也就是不断地去读取文件然后比较内容，输出最新的即可，网上搜一下也是有不少这种实现（比如这个）。
 显然这不够优雅。
 之前听河狸家的技术总监就说到了这个的解决方案，查了一下，发现使用inotify来监听文件">
-<meta property="og:updated_time" content="2017-03-13T16:01:01.000Z">
+<meta property="og:updated_time" content="2017-03-13T16:04:29.000Z">
 <meta name="twitter:card" content="summary">
 <meta name="twitter:title" content="使用inotify和epoll实现tail命令">
 <meta name="twitter:description" content="tail命令是最常用来看日志改变的工具，比如在执行某个任务时会往本地文件中打入日志，然后使用类似
@@ -179,7 +179,7 @@
 </li>
 <li><p>Q：为啥是epoll而不是select，poll？</p>
 </li>
-<li><p>A：这个纯属好玩，用select，poll也能达到相同的效果，在监听少数文件下是没有区别的，网上说的差别主要还是针对监听大量文件的情况下，通常也是网络请求高并发下，epoll会突显绝对优势，这里只是图个新鲜。</p>
+<li><p>A：这个纯属好玩，用select，poll也能达到相同的效果，在监听少数文件下是没有区别的，网上说的差别主要还是针对监听大量文件的情况下，通常也是网络请求高并发下，epoll会突显绝对优势，这里epoll只监听inotify的fd文件，永远只有一个，所以更没有区别了。</p>
 </li>
 <li><p>Q：既然epoll可以监听inotify的事件，为何epoll不直接监听变化的文件而是要绕这么大一个弯？</p>
 </li>
