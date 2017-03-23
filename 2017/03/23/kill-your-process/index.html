@@ -1,0 +1,238 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8">
+  
+  <title>如何正确杀死你的进程 | null</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1">
+  <meta name="description" content="说起杀死进程第一想到的绝对是kill这个命令，看一下man page的介绍
+
+The kill utility sends a signal to the processes specified by the pid operand(s).
+
+kill是一个向进程发送信号的命令，为什么进程需要信号呢？假设一个需要运行很久的程序正在运行，这时候你想把它停掉，尴尬，只能拔电源了。据此，linux操作系">
+<meta property="og:type" content="article">
+<meta property="og:title" content="如何正确杀死你的进程">
+<meta property="og:url" content="http://yoursite.com/2017/03/23/kill-your-process/index.html">
+<meta property="og:site_name">
+<meta property="og:description" content="说起杀死进程第一想到的绝对是kill这个命令，看一下man page的介绍
+
+The kill utility sends a signal to the processes specified by the pid operand(s).
+
+kill是一个向进程发送信号的命令，为什么进程需要信号呢？假设一个需要运行很久的程序正在运行，这时候你想把它停掉，尴尬，只能拔电源了。据此，linux操作系">
+<meta property="og:updated_time" content="2017-03-23T14:38:51.000Z">
+<meta name="twitter:card" content="summary">
+<meta name="twitter:title" content="如何正确杀死你的进程">
+<meta name="twitter:description" content="说起杀死进程第一想到的绝对是kill这个命令，看一下man page的介绍
+
+The kill utility sends a signal to the processes specified by the pid operand(s).
+
+kill是一个向进程发送信号的命令，为什么进程需要信号呢？假设一个需要运行很久的程序正在运行，这时候你想把它停掉，尴尬，只能拔电源了。据此，linux操作系">
+  
+    <link rel="alternate" href="/atom.xml" title="null" type="application/atom+xml">
+  
+  
+    <link rel="icon" href="/favicon.png">
+  
+  
+    <link href="//fonts.googleapis.com/css?family=Source+Code+Pro" rel="stylesheet" type="text/css">
+  
+  <link rel="stylesheet" href="/css/style.css">
+  
+
+</head>
+
+<body>
+  <div id="container">
+    <div id="wrap">
+      <header id="header">
+  <div id="banner"></div>
+  <div id="header-outer" class="outer">
+    <div id="header-title" class="inner">
+      <h1 id="logo-wrap">
+        <a href="/" id="logo">null</a>
+      </h1>
+      
+    </div>
+    <div id="header-inner" class="inner">
+      <nav id="main-nav">
+        <a id="main-nav-toggle" class="nav-icon"></a>
+        
+          <a class="main-nav-link" href="/">Home</a>
+        
+          <a class="main-nav-link" href="/archives">Archives</a>
+        
+      </nav>
+      <nav id="sub-nav">
+        
+          <a id="nav-rss-link" class="nav-icon" href="/atom.xml" title="RSS Feed"></a>
+        
+        <a id="nav-search-btn" class="nav-icon" title="Zoeken"></a>
+      </nav>
+      <div id="search-form-wrap">
+        <form action="//google.com/search" method="get" accept-charset="UTF-8" class="search-form"><input type="search" name="q" results="0" class="search-form-input" placeholder="Search"><button type="submit" class="search-form-submit">&#xF002;</button><input type="hidden" name="sitesearch" value="http://yoursite.com"></form>
+      </div>
+    </div>
+  </div>
+</header>
+      <div class="outer">
+        <section id="main"><article id="post-kill-your-process" class="article article-type-post" itemscope itemprop="blogPost">
+  <div class="article-meta">
+    <a href="/2017/03/23/kill-your-process/" class="article-date">
+  <time datetime="2017-03-23T14:38:23.000Z" itemprop="datePublished">2017-03-23</time>
+</a>
+    
+  </div>
+  <div class="article-inner">
+    
+    
+      <header class="article-header">
+        
+  
+    <h1 class="article-title" itemprop="name">
+      如何正确杀死你的进程
+    </h1>
+  
+
+      </header>
+    
+    <div class="article-entry" itemprop="articleBody">
+      
+        <p>说起杀死进程第一想到的绝对是kill这个命令，看一下man page的介绍</p>
+<blockquote>
+<p>The kill utility sends a signal to the processes specified by the pid operand(s).</p>
+</blockquote>
+<p>kill是一个向进程发送信号的命令，为什么进程需要信号呢？假设一个需要运行很久的程序正在运行，这时候你想把它停掉，尴尬，只能拔电源了。据此，linux操作系统提供了一系列的信号，这些信号可在程序运行时发送给进程，可以使用</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><div class="line">1</div></pre></td><td class="code"><pre><div class="line">kill -l</div></pre></td></tr></table></figure>
+<p>来查看有哪些信号，不过常用的不多，man page里面介绍的常用的信号有如下几种</p>
+<ul>
+<li>1       HUP (hang up)</li>
+<li>2       INT (interrupt)</li>
+<li>3       QUIT (quit)</li>
+<li>6       ABRT (abort)</li>
+<li>9       KILL (non-catchable,non-ignorable kill)</li>
+<li>14      ALRM (alarm clock)</li>
+<li>15      TERM (software termination signal)</li>
+</ul>
+<p>其中</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><div class="line">1</div></pre></td><td class="code"><pre><div class="line">kill $pid</div></pre></td></tr></table></figure>
+<p>默认情况下是TERM（15）信号。最常用的是INT（2）和TERM（15），INT是强制终止，不敢进程在干什么，都必须终止，而且该信号不能被程序捕获重写，TERM是终止，但是可以被我们的程序捕获重写，这样我们就可以利用它来清理现场了，几乎所有的编程语言都可以捕获kill信号。</p>
+<p>我们来写一段捕获信号处理的代码来做个简单的测试：<br><figure class="highlight plain"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div><div class="line">6</div><div class="line">7</div><div class="line">8</div><div class="line">9</div><div class="line">10</div><div class="line">11</div><div class="line">12</div><div class="line">13</div><div class="line">14</div><div class="line">15</div><div class="line">16</div><div class="line">17</div><div class="line">18</div><div class="line">19</div><div class="line">20</div><div class="line">21</div><div class="line">22</div><div class="line">23</div><div class="line">24</div><div class="line">25</div><div class="line">26</div><div class="line">27</div><div class="line">28</div><div class="line">29</div><div class="line">30</div><div class="line">31</div><div class="line">32</div><div class="line">33</div><div class="line">34</div><div class="line">35</div><div class="line">36</div><div class="line">37</div><div class="line">38</div><div class="line">39</div><div class="line">40</div><div class="line">41</div><div class="line">42</div><div class="line">43</div><div class="line">44</div><div class="line">45</div><div class="line">46</div></pre></td><td class="code"><pre><div class="line">import sun.misc.Signal;</div><div class="line">import sun.misc.SignalHandler;</div><div class="line"></div><div class="line">public class KillTest implements SignalHandler &#123;</div><div class="line"></div><div class="line">    private int i = 0;</div><div class="line"></div><div class="line">    public static void main(String[] args) &#123;</div><div class="line"></div><div class="line">        SignalTest signalTest = new SignalTest();</div><div class="line">        Signal.handle(new Signal(&quot;HUP&quot;), signalTest);</div><div class="line">        Signal.handle(new Signal(&quot;INT&quot;), signalTest);</div><div class="line">        //Signal.handle(new Signal(&quot;QUIT&quot;), signalTest);// 该信号不能捕获</div><div class="line">        Signal.handle(new Signal(&quot;ABRT&quot;), signalTest);</div><div class="line">        //Signal.handle(new Signal(&quot;KILL&quot;), signalTest);// 该信号不能捕获</div><div class="line">        Signal.handle(new Signal(&quot;ALRM&quot;), signalTest);</div><div class="line">        Signal.handle(new Signal(&quot;TERM&quot;), signalTest);</div><div class="line"></div><div class="line">        while (true) &#123;</div><div class="line">            killTest.incrI();</div><div class="line">            System.out.print(killTest.getI());</div><div class="line">            try &#123;</div><div class="line">                Thread.sleep(1000L);</div><div class="line">            &#125; catch (InterruptedException e) &#123;</div><div class="line">                e.printStackTrace();</div><div class="line">            &#125;</div><div class="line">        &#125;</div><div class="line">    &#125;</div><div class="line"></div><div class="line">    public int getI() &#123;</div><div class="line">        return this.i;</div><div class="line">    &#125;</div><div class="line"></div><div class="line">    public void setI(int i) &#123;</div><div class="line">        this.i = i;</div><div class="line">    &#125;</div><div class="line"></div><div class="line">    public int incrI() &#123;</div><div class="line">        this.i++;</div><div class="line">        return this.i;</div><div class="line">    &#125;</div><div class="line"></div><div class="line">    @Override public void handle(Signal signal) &#123;</div><div class="line">        System.out.printf(&quot;receive signal &quot; + signal.getName() + &quot;-&quot; + signal.getNumber());</div><div class="line">    &#125;</div><div class="line">&#125;</div></pre></td></tr></table></figure></p>
+<p>在常用的信号中QUIT和KILL是不能捕获的，也就是如果别人执行了这个kill，那么你的进程立马就得死，没得商量，这也可以理解，如果有人恶意的把所有信号都捕获且忽略了，那想杀掉这个进程那不是只能拔电源了？</p>
+<p>那么这种捕获通常有些什么用处呢？</p>
+<p>最常用的像发布代码，发布java代码一般是先把新包拉到服务器上，备份旧包，停止服务（如摘除节点），杀掉进程，新包替换旧包，拉起新进程，提供服务。</p>
+<p>如果原来的进程有一个文件锁，这时杀掉了原进程（假设被杀死时不做任何处理，或者使用kill -9），文件锁还在，那新的进程拉起来后一直处于异常状态，因为原来的锁一直在，没人可以解掉。</p>
+<p>刚刚如果你捕获了kill -15 信号并清理了锁文件，恰好发布系统也是使用kill -15，那么程序很完美。</p>
+<p>假设不幸用了kill -9 那也无能为力了，但是这毕竟是我们自己的程序，你应该知道怎么杀死它，所以，修改一下发布脚本吧，别那么粗暴。</p>
+<p>当然在java中可以不用捕获信号来处理，我们可以利用更简单方便的ShutdownHook</p>
+<p>把上面代码修改一下</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div><div class="line">6</div><div class="line">7</div><div class="line">8</div><div class="line">9</div><div class="line">10</div><div class="line">11</div><div class="line">12</div><div class="line">13</div><div class="line">14</div><div class="line">15</div><div class="line">16</div><div class="line">17</div><div class="line">18</div><div class="line">19</div><div class="line">20</div><div class="line">21</div><div class="line">22</div><div class="line">23</div><div class="line">24</div><div class="line">25</div><div class="line">26</div><div class="line">27</div><div class="line">28</div><div class="line">29</div><div class="line">30</div><div class="line">31</div><div class="line">32</div><div class="line">33</div><div class="line">34</div><div class="line">35</div><div class="line">36</div></pre></td><td class="code"><pre><div class="line"></div><div class="line">public class KillTest  &#123;</div><div class="line"></div><div class="line">    private int i = 0;</div><div class="line"></div><div class="line">    public static void main(String[] args) &#123;</div><div class="line"></div><div class="line">        KillTest killTest = new KillTest();</div><div class="line"></div><div class="line">        Runtime.getRuntime().addShutdownHook(</div><div class="line">                new ShutDownThread(killTest)</div><div class="line">        );</div><div class="line"></div><div class="line">        while (true) &#123;</div><div class="line">            killTest.incrI();</div><div class="line">            System.out.print(killTest.getI());</div><div class="line">            try &#123;</div><div class="line">                Thread.sleep(1000L);</div><div class="line">            &#125; catch (InterruptedException e) &#123;</div><div class="line">                e.printStackTrace();</div><div class="line">            &#125;</div><div class="line">        &#125;</div><div class="line">    &#125;</div><div class="line"></div><div class="line">    public int getI() &#123;</div><div class="line">        return this.i;</div><div class="line">    &#125;</div><div class="line"></div><div class="line">    public void setI(int i) &#123;</div><div class="line">        this.i = i;</div><div class="line">    &#125;</div><div class="line"></div><div class="line">    public int incrI() &#123;</div><div class="line">        this.i++;</div><div class="line">        return this.i;</div><div class="line">    &#125;</div></pre></td></tr></table></figure>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div><div class="line">6</div><div class="line">7</div><div class="line">8</div><div class="line">9</div><div class="line">10</div><div class="line">11</div><div class="line">12</div><div class="line">13</div><div class="line">14</div><div class="line">15</div><div class="line">16</div><div class="line">17</div><div class="line">18</div></pre></td><td class="code"><pre><div class="line">public class ShutDownThread extends Thread &#123;</div><div class="line"></div><div class="line">        public KillTest killTest;</div><div class="line"></div><div class="line">        public ShutDownThread(KillTest killTest) &#123;</div><div class="line">                this.killTest = killTest;</div><div class="line">        &#125;</div><div class="line"></div><div class="line">        public int getKillTestI() &#123;</div><div class="line">                return killTest.getI();</div><div class="line">        &#125;</div><div class="line"></div><div class="line">        @Override public void run() &#123;</div><div class="line">                super.run();</div><div class="line">                int i = getKillTestI();</div><div class="line">                System.out.print(&quot;\nI&apos;m shutdown hook...&quot;+i);</div><div class="line">        &#125;</div><div class="line">&#125;</div></pre></td></tr></table></figure>
+<p>通过这种方法就不用注册那么多信号了，毕竟能捕获的那么的，我猜测这个的实现也是基于信号的封装，但是这里有一个注意的地方是，这个hook在程序正常退出，异常退出（如内存不够等）也会执行，正常退出在上面的例子中得做一个简单的区分。</p>
+<p>最后总结一下，如果程序退出需要处理一些东西，捕获一下信号或者加个hook，说不定谁会去服务器上执行一下kill呢，就算没有，也要防止类似发布系统等对你程序的影响。执行kill最好也不要kill -9，除非真的杀不死~</p>
+
+      
+    </div>
+    <footer class="article-footer">
+      <a data-url="http://yoursite.com/2017/03/23/kill-your-process/" data-id="cj0mi85j300005prdr645pux9" class="article-share-link">Delen</a>
+      
+      
+    </footer>
+  </div>
+  
+    
+<nav id="article-nav">
+  
+  
+    <a href="/2017/03/13/使用inotify和epoll实现tail命令/" id="article-nav-older" class="article-nav-link-wrap">
+      <strong class="article-nav-caption">Ouder</strong>
+      <div class="article-nav-title">使用inotify和epoll实现tail命令</div>
+    </a>
+  
+</nav>
+
+  
+</article>
+
+</section>
+        
+          <aside id="sidebar">
+  
+    
+
+  
+    
+
+  
+    
+  
+    
+  <div class="widget-wrap">
+    <h3 class="widget-title">Archieven</h3>
+    <div class="widget">
+      <ul class="archive-list"><li class="archive-list-item"><a class="archive-list-link" href="/archives/2017/03/">March 2017</a></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2016/12/">December 2016</a></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2016/07/">July 2016</a></li></ul>
+    </div>
+  </div>
+
+
+  
+    
+  <div class="widget-wrap">
+    <h3 class="widget-title">Recente berichten</h3>
+    <div class="widget">
+      <ul>
+        
+          <li>
+            <a href="/2017/03/23/kill-your-process/">如何正确杀死你的进程</a>
+          </li>
+        
+          <li>
+            <a href="/2017/03/13/使用inotify和epoll实现tail命令/">使用inotify和epoll实现tail命令</a>
+          </li>
+        
+          <li>
+            <a href="/2016/12/08/redis存储分析/">redis存储分析</a>
+          </li>
+        
+          <li>
+            <a href="/2016/07/26/hello-world/">Hello World</a>
+          </li>
+        
+      </ul>
+    </div>
+  </div>
+
+  
+</aside>
+        
+      </div>
+      <footer id="footer">
+  
+  <div class="outer">
+    <div id="footer-info" class="inner">
+      &copy; 2017 龟仙老人<br>
+      Powered by <a href="http://hexo.io/" target="_blank">Hexo</a>
+    </div>
+  </div>
+</footer>
+    </div>
+    <nav id="mobile-nav">
+  
+    <a href="/" class="mobile-nav-link">Home</a>
+  
+    <a href="/archives" class="mobile-nav-link">Archives</a>
+  
+</nav>
+    
+
+<script src="//ajax.googleapis.com/ajax/libs/jquery/2.0.3/jquery.min.js"></script>
+
+
+  <link rel="stylesheet" href="/fancybox/jquery.fancybox.css">
+  <script src="/fancybox/jquery.fancybox.pack.js"></script>
+
+
+<script src="/js/script.js"></script>
+
+  </div>
+</body>
+</html>
