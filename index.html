@@ -48,9 +48,9 @@
       </nav>
       <nav id="sub-nav">
         
-          <a id="nav-rss-link" class="nav-icon" href="/atom.xml" title="RSS Feed"></a>
+          <a id="nav-rss-link" class="nav-icon" href="/atom.xml" title="Flux RSS"></a>
         
-        <a id="nav-search-btn" class="nav-icon" title="Search"></a>
+        <a id="nav-search-btn" class="nav-icon" title="Rechercher"></a>
       </nav>
       <div id="search-form-wrap">
         <form action="//google.com/search" method="get" accept-charset="UTF-8" class="search-form"><input type="search" name="q" results="0" class="search-form-input" placeholder="Search"><button type="submit" class="search-form-submit">&#xF002;</button><input type="hidden" name="sitesearch" value="http://yoursite.com"></form>
@@ -114,7 +114,7 @@
 <li>验证服务是否正常，用客户端连上去随便测试几个命令 bin/zkCli.sh -server 127.0.0.1:2181</li>
 <li>JAVA客户端选择：原生的Api，ZkClient，Curator，这里我们选择Curator，它是一个Apache开源项目，相对原生的Api更简单易用</li>
 </ul>
-<h6 id="实现一个分布式锁"><a href="#实现一个分布式锁" class="headerlink" title="实现一个分布式锁"></a>实现一个分布式锁</h6><p>实现一个分布式锁，场景为ES build全量build索引时只能由单一进程来build，在进程build索引前先拿到索引才可以开始build，build完了得释放锁，在锁住的情况下如果程序挂了或者发布代码将进程kill了也得释放掉锁，否则后续的进程将再也无法拿到锁。之前实现过一个本地文件的版本，缺点在于无法应用到分布式场景下，且如果kill程序时暴力地使用了kill -9，进程退出无法清理锁文件将导致后续进程再也无法处理；利用ZooKeeper很好地解决了分布式和锁无法清理的问题，用ZooKeeper的临时节点，获取锁的时候试图创建节点，如果说节点已经存在则说明锁被别人拿着，如果创建成功则成功获取锁，程序结束删除节点，如果恰好进程异常终止甚至被无情的kill -9杀掉，那等一会在服务端无法和客户端取得重连的情况下，临时节点也会被清理掉，这样后续的进程又可以正常的运行了。代码如下，留了个接口，也可以自己实现别的锁逻辑。</p>
+<h6 id="实现一个分布式锁"><a href="#实现一个分布式锁" class="headerlink" title="实现一个分布式锁"></a>实现一个分布式锁</h6><p>实现一个分布式锁，场景为ES build全量build索引时只能由单一进程来build，在进程build索引前先拿到锁才可以开始build，build完了得释放锁，在锁住的情况下如果程序挂了或者发布代码将进程kill了也得释放掉锁，否则后续的进程将再也无法拿到锁。之前实现过一个本地文件的版本，缺点在于无法应用到分布式场景下，且如果kill程序时暴力地使用了kill -9，进程退出无法清理锁文件将导致后续进程再也无法处理；利用ZooKeeper很好地解决了分布式和锁无法清理的问题，用ZooKeeper的临时节点，获取锁的时候试图创建节点，如果说节点已经存在则说明锁被别人拿着，如果创建成功则成功获取锁，程序结束删除节点，如果恰好进程异常终止甚至被无情的kill -9杀掉，那等一会在服务端无法和客户端取得重连的情况下，临时节点也会被清理掉，这样后续的进程又可以正常的运行了。代码如下，留了个接口，也可以自己实现别的锁逻辑。</p>
 <p>接口<br><figure class="highlight plain"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div><div class="line">6</div><div class="line">7</div><div class="line">8</div><div class="line">9</div></pre></td><td class="code"><pre><div class="line">package BizLock;</div><div class="line"></div><div class="line">public interface BizLock &#123;</div><div class="line"></div><div class="line">    public boolean getLock(String lockName) throws Exception;</div><div class="line"></div><div class="line">    public void releaseLock(String lockName) throws Exception;</div><div class="line"></div><div class="line">&#125;</div></pre></td></tr></table></figure></p>
 <p>ZooKeeper实现的分布式锁<br><figure class="highlight plain"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div><div class="line">6</div><div class="line">7</div><div class="line">8</div><div class="line">9</div><div class="line">10</div><div class="line">11</div><div class="line">12</div><div class="line">13</div><div class="line">14</div><div class="line">15</div><div class="line">16</div><div class="line">17</div><div class="line">18</div><div class="line">19</div><div class="line">20</div><div class="line">21</div><div class="line">22</div><div class="line">23</div><div class="line">24</div><div class="line">25</div><div class="line">26</div><div class="line">27</div><div class="line">28</div><div class="line">29</div><div class="line">30</div><div class="line">31</div><div class="line">32</div><div class="line">33</div><div class="line">34</div><div class="line">35</div><div class="line">36</div><div class="line">37</div><div class="line">38</div><div class="line">39</div><div class="line">40</div><div class="line">41</div><div class="line">42</div><div class="line">43</div><div class="line">44</div><div class="line">45</div><div class="line">46</div><div class="line">47</div><div class="line">48</div><div class="line">49</div></pre></td><td class="code"><pre><div class="line">package BizLock;</div><div class="line"></div><div class="line">import org.apache.curator.framework.CuratorFramework;</div><div class="line">import org.apache.curator.framework.CuratorFrameworkFactory;</div><div class="line">import org.apache.curator.retry.RetryNTimes;</div><div class="line">import org.apache.zookeeper.CreateMode;</div><div class="line">import org.apache.zookeeper.KeeperException;</div><div class="line"></div><div class="line">public class ZkLock implements BizLock &#123;</div><div class="line"></div><div class="line">    /**</div><div class="line">     * 这些变量可以写入配置中</div><div class="line">     */</div><div class="line">    private static final String nameSpace = &quot;zkLock&quot;;</div><div class="line">    private static final String zkUrl = &quot;127.0.0.1:2181&quot;;</div><div class="line"></div><div class="line">    private static ZkLock zkLock = null;</div><div class="line">    private static CuratorFramework client = null;</div><div class="line"></div><div class="line">    private ZkLock() &#123;</div><div class="line">        client = CuratorFrameworkFactory.newClient(zkUrl, new RetryNTimes(5, 5000));</div><div class="line">        client.start();</div><div class="line">        client.usingNamespace(nameSpace);</div><div class="line">    &#125;</div><div class="line"></div><div class="line">    public static ZkLock getInstance() &#123;</div><div class="line">        if (zkLock == null) &#123;</div><div class="line">            zkLock = new ZkLock();</div><div class="line">        &#125;</div><div class="line">        return zkLock;</div><div class="line">    &#125;</div><div class="line"></div><div class="line">    public boolean getLock(String lockName) throws Exception&#123;</div><div class="line">        try &#123;</div><div class="line">            client.create().withMode(CreateMode.EPHEMERAL).forPath(getLockNode(lockName));</div><div class="line">        &#125; catch (KeeperException.NodeExistsException e) &#123;</div><div class="line">            return false;</div><div class="line">        &#125;</div><div class="line">        return true;</div><div class="line">    &#125;</div><div class="line"></div><div class="line">    public void releaseLock(String lockName) throws Exception&#123;</div><div class="line">        client.delete().forPath(lockName);</div><div class="line">    &#125;</div><div class="line"></div><div class="line">    private String getLockNode(String loockName) &#123;</div><div class="line">        return &quot;/&quot;+loockName;</div><div class="line">    &#125;</div><div class="line">&#125;</div></pre></td></tr></table></figure></p>
 <h1 id="参考："><a href="#参考：" class="headerlink" title="参考："></a>参考：</h1><blockquote>
@@ -124,7 +124,7 @@
       
     </div>
     <footer class="article-footer">
-      <a data-url="http://yoursite.com/2017/08/19/ZooKeeper入门笔记/" data-id="cj6jetsmx0001lmrd62be9nmr" class="article-share-link">Share</a>
+      <a data-url="http://yoursite.com/2017/08/19/ZooKeeper入门笔记/" data-id="cj6jetsmx0001lmrd62be9nmr" class="article-share-link">Partager</a>
       
       
     </footer>
@@ -192,7 +192,7 @@
       
     </div>
     <footer class="article-footer">
-      <a data-url="http://yoursite.com/2017/03/23/kill-your-process/" data-id="cj6jetsn00002lmrdb5o0ycnf" class="article-share-link">Share</a>
+      <a data-url="http://yoursite.com/2017/03/23/kill-your-process/" data-id="cj6jetsn00002lmrdb5o0ycnf" class="article-share-link">Partager</a>
       
       
     </footer>
@@ -295,7 +295,7 @@
       
     </div>
     <footer class="article-footer">
-      <a data-url="http://yoursite.com/2017/03/13/使用inotify和epoll实现tail命令/" data-id="cj6jetsn40004lmrddhf5zyx8" class="article-share-link">Share</a>
+      <a data-url="http://yoursite.com/2017/03/13/使用inotify和epoll实现tail命令/" data-id="cj6jetsn40004lmrddhf5zyx8" class="article-share-link">Partager</a>
       
       
     </footer>
@@ -379,7 +379,7 @@
       
     </div>
     <footer class="article-footer">
-      <a data-url="http://yoursite.com/2016/12/08/redis存储分析/" data-id="cj6jetsn20003lmrd6qij0ch0" class="article-share-link">Share</a>
+      <a data-url="http://yoursite.com/2016/12/08/redis存储分析/" data-id="cj6jetsn20003lmrd6qij0ch0" class="article-share-link">Partager</a>
       
       
     </footer>
@@ -424,7 +424,7 @@
       
     </div>
     <footer class="article-footer">
-      <a data-url="http://yoursite.com/2016/07/26/hello-world/" data-id="cj6jetsms0000lmrdqb3hyfai" class="article-share-link">Share</a>
+      <a data-url="http://yoursite.com/2016/07/26/hello-world/" data-id="cj6jetsms0000lmrdqb3hyfai" class="article-share-link">Partager</a>
       
       
     </footer>
@@ -459,7 +459,7 @@
   
     
   <div class="widget-wrap">
-    <h3 class="widget-title">Recent Posts</h3>
+    <h3 class="widget-title">Articles récents</h3>
     <div class="widget">
       <ul>
         
@@ -496,7 +496,7 @@
   <div class="outer">
     <div id="footer-info" class="inner">
       &copy; 2017 龟仙老人<br>
-      Powered by <a href="http://hexo.io/" target="_blank">Hexo</a>
+      Propulsé by <a href="http://hexo.io/" target="_blank">Hexo</a>
     </div>
   </div>
 </footer>
