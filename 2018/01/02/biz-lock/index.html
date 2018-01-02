@@ -3,7 +3,7 @@
 <head>
   <meta charset="utf-8">
   
-  <title>biz-lock | null</title>
+  <title>高并发下原子操作与主从延迟下的锁的思考 | null</title>
   <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1">
   <meta name="description" content="几个典型场景场景1电商系统通常会有秒杀这种业务场景，例如：一件商品在0点开启秒杀，库存只有5件，某程序员这样来实现：
 
@@ -11,7 +11,7 @@
 
 由于查询库存和库存减1这两步操作并不是原子操作，所以当大量请求涌入的时候，就会出现“超卖”的情况，A请求进来查询库存还有1件，于是执行扣库">
 <meta property="og:type" content="article">
-<meta property="og:title" content="biz-lock">
+<meta property="og:title" content="高并发下原子操作与主从延迟下的锁的思考">
 <meta property="og:url" content="http://yoursite.com/2018/01/02/biz-lock/index.html">
 <meta property="og:site_name">
 <meta property="og:description" content="几个典型场景场景1电商系统通常会有秒杀这种业务场景，例如：一件商品在0点开启秒杀，库存只有5件，某程序员这样来实现：
@@ -19,9 +19,9 @@
 一个购买请求过来，先从数据库查询库存，如果库存大于等于1时则可以购买，库存减1，生成订单，如果库存小于等于0，则购买失败提示秒杀已经结束。
 
 由于查询库存和库存减1这两步操作并不是原子操作，所以当大量请求涌入的时候，就会出现“超卖”的情况，A请求进来查询库存还有1件，于是执行扣库">
-<meta property="og:updated_time" content="2018-01-02T13:31:00.000Z">
+<meta property="og:updated_time" content="2018-01-02T13:36:16.000Z">
 <meta name="twitter:card" content="summary">
-<meta name="twitter:title" content="biz-lock">
+<meta name="twitter:title" content="高并发下原子操作与主从延迟下的锁的思考">
 <meta name="twitter:description" content="几个典型场景场景1电商系统通常会有秒杀这种业务场景，例如：一件商品在0点开启秒杀，库存只有5件，某程序员这样来实现：
 
 一个购买请求过来，先从数据库查询库存，如果库存大于等于1时则可以购买，库存减1，生成订单，如果库存小于等于0，则购买失败提示秒杀已经结束。
@@ -64,9 +64,9 @@
       </nav>
       <nav id="sub-nav">
         
-          <a id="nav-rss-link" class="nav-icon" href="/atom.xml" title="RSS Feed"></a>
+          <a id="nav-rss-link" class="nav-icon" href="/atom.xml" title="Flux RSS"></a>
         
-        <a id="nav-search-btn" class="nav-icon" title="Search"></a>
+        <a id="nav-search-btn" class="nav-icon" title="Rechercher"></a>
       </nav>
       <div id="search-form-wrap">
         <form action="//google.com/search" method="get" accept-charset="UTF-8" class="search-form"><input type="search" name="q" results="0" class="search-form-input" placeholder="Search"><button type="submit" class="search-form-submit">&#xF002;</button><input type="hidden" name="sitesearch" value="http://yoursite.com"></form>
@@ -89,7 +89,7 @@
         
   
     <h1 class="article-title" itemprop="name">
-      biz-lock
+      高并发下原子操作与主从延迟下的锁的思考
     </h1>
   
 
@@ -114,7 +114,7 @@
       
     </div>
     <footer class="article-footer">
-      <a data-url="http://yoursite.com/2018/01/02/biz-lock/" data-id="cjbxo9ufm00001krddto5o59x" class="article-share-link">Share</a>
+      <a data-url="http://yoursite.com/2018/01/02/biz-lock/" data-id="cjbxogv4m0000d9rdydrgxn83" class="article-share-link">Partager</a>
       
       
     </footer>
@@ -125,7 +125,7 @@
   
   
     <a href="/2017/08/19/ZooKeeper入门笔记/" id="article-nav-older" class="article-nav-link-wrap">
-      <strong class="article-nav-caption">Older</strong>
+      <strong class="article-nav-caption">Ancien</strong>
       <div class="article-nav-title">ZooKeeper入门笔记</div>
     </a>
   
@@ -158,12 +158,12 @@
   
     
   <div class="widget-wrap">
-    <h3 class="widget-title">Recent Posts</h3>
+    <h3 class="widget-title">Articles récents</h3>
     <div class="widget">
       <ul>
         
           <li>
-            <a href="/2018/01/02/biz-lock/">biz-lock</a>
+            <a href="/2018/01/02/biz-lock/">高并发下原子操作与主从延迟下的锁的思考</a>
           </li>
         
           <li>
@@ -195,7 +195,7 @@
   <div class="outer">
     <div id="footer-info" class="inner">
       &copy; 2018 龟仙老人<br>
-      Powered by <a href="http://hexo.io/" target="_blank">Hexo</a>
+      Propulsé by <a href="http://hexo.io/" target="_blank">Hexo</a>
     </div>
   </div>
 </footer>
