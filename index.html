@@ -48,9 +48,9 @@
       </nav>
       <nav id="sub-nav">
         
-          <a id="nav-rss-link" class="nav-icon" href="/atom.xml" title="Flux RSS"></a>
+          <a id="nav-rss-link" class="nav-icon" href="/atom.xml" title="RSS Feed"></a>
         
-        <a id="nav-search-btn" class="nav-icon" title="Rechercher"></a>
+        <a id="nav-search-btn" class="nav-icon" title="Search"></a>
       </nav>
       <div id="search-form-wrap">
         <form action="//google.com/search" method="get" accept-charset="UTF-8" class="search-form"><input type="search" name="q" results="0" class="search-form-input" placeholder="Search"><button type="submit" class="search-form-submit">&#xF002;</button><input type="hidden" name="sitesearch" value="http://yoursite.com"></form>
@@ -60,6 +60,55 @@
 </header>
       <div class="outer">
         <section id="main">
+  
+    <article id="post-biz-lock" class="article article-type-post" itemscope itemprop="blogPost">
+  <div class="article-meta">
+    <a href="/2018/01/02/biz-lock/" class="article-date">
+  <time datetime="2018-01-02T13:27:34.000Z" itemprop="datePublished">2018-01-02</time>
+</a>
+    
+  </div>
+  <div class="article-inner">
+    
+    
+      <header class="article-header">
+        
+  
+    <h1 itemprop="name">
+      <a class="article-title" href="/2018/01/02/biz-lock/">biz-lock</a>
+    </h1>
+  
+
+      </header>
+    
+    <div class="article-entry" itemprop="articleBody">
+      
+        <h3 id="几个典型场景"><a href="#几个典型场景" class="headerlink" title="几个典型场景"></a>几个典型场景</h3><h6 id="场景1"><a href="#场景1" class="headerlink" title="场景1"></a>场景1</h6><p>电商系统通常会有秒杀这种业务场景，例如：一件商品在0点开启秒杀，库存只有5件，某程序员这样来实现：</p>
+<ul>
+<li>一个购买请求过来，先从数据库查询库存，如果库存大于等于1时则可以购买，库存减1，生成订单，如果库存小于等于0，则购买失败提示秒杀已经结束。</li>
+</ul>
+<p>由于查询库存和库存减1这两步操作并不是原子操作，所以当大量请求涌入的时候，就会出现“超卖”的情况，A请求进来查询库存还有1件，于是执行扣库存操作，在查询和扣库存操作前，B请求也进来，查询库存也是1，于是B也执行扣库存操作，此时库存其实只有一件，如果并发的量更大，超卖的会更多。</p>
+<h6 id="场景2"><a href="#场景2" class="headerlink" title="场景2"></a>场景2</h6><p>活动领取奖励，一个用户只能领取一次，用户很快地点了两次，第一次点击领取领取了奖品，领取记录落入db，第二次几乎和第一次同时（别以为不可能，在实际中会有很多这种情况出现，无论是用户操作还是恶意为之，我们都必须避免）。程序员的实现逻辑是：查询db该用户是否已经领取奖励，如果未领取则可以领取，发放奖励，如果已经领取，则提示无法重复领取。看似无懈可击的逻辑在数据库是主从的架构下便变得很脆弱，就算插入数据成功，在很短的时间内也是有可能查询不到数据。这个问题在大多数主从架构下都是存在的，如主从的数据库，主从的redis。</p>
+<h3 id="几个解决方案"><a href="#几个解决方案" class="headerlink" title="几个解决方案"></a>几个解决方案</h3><h6 id="1、redis"><a href="#1、redis" class="headerlink" title="1、redis"></a>1、redis</h6><p>利用redis 的incr（incrBy）的原子性，利用返回值判断是否操作成功。<br>库存可以预先存入redis，每次请求则减1，减到0之后便不能再购买，incrBy的原子性，单线程只有主库可写保证了只有一个线程在操作redis的值，不会出现超卖的情况。领取奖励也是同理，领取前对一个key进行incr，如果得到的是1则说明是第一次领取，如果不是1则说明已经领取过了。</p>
+<h6 id="2、mysql"><a href="#2、mysql" class="headerlink" title="2、mysql"></a>2、mysql</h6><p>秒杀问题可以先查询出库存，如果库存大于等于1的情况下，执行语句</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><div class="line">1</div></pre></td><td class="code"><pre><div class="line">update product_item set left_num = left_num - 1 where left_num = #left_num#</div></pre></td></tr></table></figure>
+<p>如果执行成功则表示扣除库存成功，反之则失败。</p>
+<p>领取奖励可以建立一个lock表，该表只有一个name字段，且该字段建立一个唯一索引。<br>领取时像该表插入一个跟该用户绑定的name，如果插入成功则表示成功，如果插入失败，说明已经领取过奖励。</p>
+<h6 id="3、zookeeper"><a href="#3、zookeeper" class="headerlink" title="3、zookeeper"></a>3、zookeeper</h6><p>秒杀问题类似mysql的实现，zookeeper天生自带version，所以在修改数据的时候带上version，如果version不对则会更新失败<br>领取奖励可以使用创建节点的方式来实现，创建节点成功说明未领取过，再次创建相同节点则会报错，说明奖励已经领取。</p>
+<h3 id="几个抽象封装"><a href="#几个抽象封装" class="headerlink" title="几个抽象封装"></a>几个抽象封装</h3><p>针对奖励领取问题，我抽象出一个分布式锁，这种判断是否已经领取过可以理解为能否获取一个锁，如果获取到则可以继续操作，如果未获取到，则操作失败。<br>于是用java，分别针对redis，mysql，zookeeper实现了一个业务通用的分布式锁（顺便还实现了一个本地文件的版本，不过这个不能用在分布式场景下），<a href="https://github.com/lkxiaolou/BizLock" target="_blank" rel="external">地址在这里</a>。<br>redis客户端用jedis，mysql用的mybatis框架，zookeeper用的curator客户端。实现起来很简单，只是全当做练习罢了。</p>
+
+      
+    </div>
+    <footer class="article-footer">
+      <a data-url="http://yoursite.com/2018/01/02/biz-lock/" data-id="cjbxo9ufm00001krddto5o59x" class="article-share-link">Share</a>
+      
+      
+    </footer>
+  </div>
+  
+</article>
+
+
   
     <article id="post-ZooKeeper入门笔记" class="article article-type-post" itemscope itemprop="blogPost">
   <div class="article-meta">
@@ -124,7 +173,7 @@
       
     </div>
     <footer class="article-footer">
-      <a data-url="http://yoursite.com/2017/08/19/ZooKeeper入门笔记/" data-id="cj6jetsmx0001lmrd62be9nmr" class="article-share-link">Partager</a>
+      <a data-url="http://yoursite.com/2017/08/19/ZooKeeper入门笔记/" data-id="cjbxo9ufz00021krdtq0n8c6f" class="article-share-link">Share</a>
       
       
     </footer>
@@ -192,7 +241,7 @@
       
     </div>
     <footer class="article-footer">
-      <a data-url="http://yoursite.com/2017/03/23/kill-your-process/" data-id="cj6jetsn00002lmrdb5o0ycnf" class="article-share-link">Partager</a>
+      <a data-url="http://yoursite.com/2017/03/23/kill-your-process/" data-id="cjbxo9ufv00011krddm5axm64" class="article-share-link">Share</a>
       
       
     </footer>
@@ -295,7 +344,7 @@
       
     </div>
     <footer class="article-footer">
-      <a data-url="http://yoursite.com/2017/03/13/使用inotify和epoll实现tail命令/" data-id="cj6jetsn40004lmrddhf5zyx8" class="article-share-link">Partager</a>
+      <a data-url="http://yoursite.com/2017/03/13/使用inotify和epoll实现tail命令/" data-id="cjbxo9ug100031krd7na6oeny" class="article-share-link">Share</a>
       
       
     </footer>
@@ -379,7 +428,7 @@
       
     </div>
     <footer class="article-footer">
-      <a data-url="http://yoursite.com/2016/12/08/redis存储分析/" data-id="cj6jetsn20003lmrd6qij0ch0" class="article-share-link">Partager</a>
+      <a data-url="http://yoursite.com/2016/12/08/redis存储分析/" data-id="cjbxo9ugj00051krd5quam5pe" class="article-share-link">Share</a>
       
       
     </footer>
@@ -424,7 +473,7 @@
       
     </div>
     <footer class="article-footer">
-      <a data-url="http://yoursite.com/2016/07/26/hello-world/" data-id="cj6jetsms0000lmrdqb3hyfai" class="article-share-link">Partager</a>
+      <a data-url="http://yoursite.com/2016/07/26/hello-world/" data-id="cjbxo9ug400041krd0ecrn8pr" class="article-share-link">Share</a>
       
       
     </footer>
@@ -451,7 +500,7 @@
   <div class="widget-wrap">
     <h3 class="widget-title">Archives</h3>
     <div class="widget">
-      <ul class="archive-list"><li class="archive-list-item"><a class="archive-list-link" href="/archives/2017/08/">August 2017</a></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2017/03/">March 2017</a></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2016/12/">December 2016</a></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2016/07/">July 2016</a></li></ul>
+      <ul class="archive-list"><li class="archive-list-item"><a class="archive-list-link" href="/archives/2018/01/">January 2018</a></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2017/08/">August 2017</a></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2017/03/">March 2017</a></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2016/12/">December 2016</a></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2016/07/">July 2016</a></li></ul>
     </div>
   </div>
 
@@ -459,9 +508,13 @@
   
     
   <div class="widget-wrap">
-    <h3 class="widget-title">Articles récents</h3>
+    <h3 class="widget-title">Recent Posts</h3>
     <div class="widget">
       <ul>
+        
+          <li>
+            <a href="/2018/01/02/biz-lock/">biz-lock</a>
+          </li>
         
           <li>
             <a href="/2017/08/19/ZooKeeper入门笔记/">ZooKeeper入门笔记</a>
@@ -479,10 +532,6 @@
             <a href="/2016/12/08/redis存储分析/">redis存储分析</a>
           </li>
         
-          <li>
-            <a href="/2016/07/26/hello-world/">Hello World</a>
-          </li>
-        
       </ul>
     </div>
   </div>
@@ -495,8 +544,8 @@
   
   <div class="outer">
     <div id="footer-info" class="inner">
-      &copy; 2017 龟仙老人<br>
-      Propulsé by <a href="http://hexo.io/" target="_blank">Hexo</a>
+      &copy; 2018 龟仙老人<br>
+      Powered by <a href="http://hexo.io/" target="_blank">Hexo</a>
     </div>
   </div>
 </footer>
