@@ -3,7 +3,7 @@
 <head>
   <meta charset="utf-8">
   
-  <title>高并发下原子操作与主从延迟下的锁的思考 | Wen Er Lu NO. 48</title>
+  <title>高并发下原子操作与主从延迟下的锁的思考 | Wen Er Rd. NO. 48</title>
   <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1">
   <meta name="description" content="几个典型场景场景1电商系统通常会有秒杀这种业务场景，例如：一件商品在0点开启秒杀，库存只有5件，某程序员这样来实现：
 
@@ -13,7 +13,7 @@
 <meta property="og:type" content="article">
 <meta property="og:title" content="高并发下原子操作与主从延迟下的锁的思考">
 <meta property="og:url" content="http://yoursite.com/2018/01/02/biz-lock/index.html">
-<meta property="og:site_name" content="Wen Er Lu NO. 48">
+<meta property="og:site_name" content="Wen Er Rd. NO. 48">
 <meta property="og:description" content="几个典型场景场景1电商系统通常会有秒杀这种业务场景，例如：一件商品在0点开启秒杀，库存只有5件，某程序员这样来实现：
 
 一个购买请求过来，先从数据库查询库存，如果库存大于等于1时则可以购买，库存减1，生成订单，如果库存小于等于0，则购买失败提示秒杀已经结束。
@@ -28,7 +28,7 @@
 
 由于查询库存和库存减1这两步操作并不是原子操作，所以当大量请求涌入的时候，就会出现“超卖”的情况，A请求进来查询库存还有1件，于是执行扣库">
   
-    <link rel="alternate" href="/atom.xml" title="Wen Er Lu NO. 48" type="application/atom+xml">
+    <link rel="alternate" href="/atom.xml" title="Wen Er Rd. NO. 48" type="application/atom+xml">
   
   
     <link rel="icon" href="/favicon.png">
@@ -49,7 +49,7 @@
   <div id="header-outer" class="outer">
     <div id="header-title" class="inner">
       <h1 id="logo-wrap">
-        <a href="/" id="logo">Wen Er Lu NO. 48</a>
+        <a href="/" id="logo">Wen Er Rd. NO. 48</a>
       </h1>
       
     </div>
